@@ -78,6 +78,9 @@ void kmain(void)
 	target_early_init();
 
 	dprintf(INFO, "welcome to lk\n\n");
+	dprintf(INFO, "OpenStick Bootloader V0.01\n");
+	dprintf(INFO, "[Author] HandsomeYingyan <handsomeyingyan@gmail.com>\n");
+	dprintf(INFO, "This Bootloader Has Super Handsome Power!\n");
 	bs_set_timestamp(BS_BL_START);
 
 	// deal with any static constructors
