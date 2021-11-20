@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copy
+
+/dts-v1/;
+
+#include <skeleton.dtsi>
+#include <lk2nd.h>
+
+/ {
+	model = "Handsome Stick";
+	compatible = "handsome,stick", "qcom,msm8916", "lk2nd,device";
+	qcom,msm-id = <0xce 0x00 0xf8 0x00 0xf9 0x00 0xfa 0x00>;
+	qcom,board-id = <0x08 0x100>;
+	lk2nd,keys = <KEY_HOME 37 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH)>;
+};
