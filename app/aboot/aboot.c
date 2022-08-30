@@ -316,26 +316,7 @@ static void ptentry_to_tag(unsigned **ptr, struct ptentry *ptn)
 	*ptr += sizeof(struct atag_ptbl_entry) / sizeof(unsigned);
 }
 
-#if WITH_LK2ND
-static char *concat_args(const char *a, const char *b)
-{
-	int lenA = strlen(a), lenB = strlen(b);
-	char *r = malloc(lenA + lenB + 2);
-	memcpy(r, a, lenA);
-	r[lenA] = ' ';
-	memcpy(r + lenA + 1, b, lenB + 1);
-	return r;
-}
-unsigned char *update_cmdline(const char* cmdline)
-{
-	/* Only take cmdline from original bootloader if downstream or lk2nd */
-	if (cmdline && lk2nd_dev.cmdline &&
-	    (strstr(cmdline, "androidboot.hardware=qcom") || strstr(cmdline, "lk2nd")))
-		return concat_args(cmdline, lk2nd_dev.cmdline);
-	return strdup(cmdline);
-}
-#else
-unsigned char *update_cmdline(const char * cmdline)
+static unsigned char *update_cmdline0(const char * cmdline)
 {
 	int cmdline_len = 0;
 	int have_cmdline = 0;
@@ -643,7 +624,34 @@ unsigned char *update_cmdline(const char * cmdline)
 	dprintf(INFO, "cmdline: %s\n", cmdline_final ? cmdline_final : "");
 	return cmdline_final;
 }
+static char *concat_args(const char *a, const char *b)
+{
+	int lenA = strlen(a), lenB = strlen(b);
+	char *r = malloc(lenA + lenB + 2);
+	memcpy(r, a, lenA);
+	r[lenA] = ' ';
+	memcpy(r + lenA + 1, b, lenB + 1);
+	return r;
+}
+unsigned char *update_cmdline(const char *cmdline)
+{
+#if WITH_LK2ND
+	bool lk2nd = lk2nd_cmdline_scan(cmdline, "lk2nd");
+
+	/* Only add to cmdline if downstream or lk2nd */
+	if (!lk2nd_cmdline_scan(cmdline, "androidboot.hardware=qcom") && !lk2nd)
+		return strdup(cmdline);
+
+	/* Use cmdline from original bootloader if available */
+	if (lk2nd_dev.cmdline)
+		return concat_args(cmdline, lk2nd_dev.cmdline);
+
+	/* Use a special simple cmdline for lk1st -> lk2nd */
+	if (lk2nd)
+		return genlk1st2lk2ndcmdline();
 #endif
+	return update_cmdline0(cmdline);
+}
 
 unsigned *atag_core(unsigned *ptr)
 {
@@ -3706,11 +3714,16 @@ int splash_screen_mmc()
 
 int fetch_image_from_partition()
 {
+#if WITH_LK2ND
+	/* Never show splash from stock partition */
+	return -1;
+#else
 	if (target_is_emmc_boot()) {
 		return splash_screen_mmc();
 	} else {
 		return splash_screen_flash();
 	}
+#endif
 }
 
 /* Get the size from partiton name */
@@ -3946,6 +3959,10 @@ void aboot_init(const struct app_descriptor *app)
 
 	memset(display_panel_buf, '\0', MAX_PANEL_BUF_SIZE);
 
+#if WITH_LK2ND
+	lk2nd_init();
+#endif
+
 	/* Check if we should do something other than booting up */
 	if (keys_get_state(KEY_VOLUMEUP) && keys_get_state(KEY_VOLUMEDOWN))
 	{
@@ -4022,13 +4039,15 @@ normal_boot:
 	{
 		if (target_is_emmc_boot())
 		{
-			/* Try to boot from first fs we can find */
-			ssize_t loaded_file = fsboot_boot_first(target_get_scratch_address(), target_get_max_flash_size());
+			if (!boot_into_recovery) {
+				/* Try to boot from first fs we can find */
+				ssize_t loaded_file = fsboot_boot_first(target_get_scratch_address(), target_get_max_flash_size());
 
-			if (loaded_file > 0)
-				cmd_boot(NULL, target_get_scratch_address(), target_get_max_flash_size());
+				if (loaded_file > 0)
+					cmd_boot(NULL, target_get_scratch_address(), target_get_max_flash_size());
 
-			dprintf(CRITICAL, "Unable to load boot.img from ext2. Continuing legacy boot\n");
+				dprintf(CRITICAL, "Unable to load boot.img from ext2. Continuing legacy boot\n");
+			}
 
 #if RECOVERY_MESSAGES
 			if(emmc_recovery_init())

@@ -2,16 +2,91 @@
 #include <debug.h>
 #include <dev/fbcon.h>
 #include <malloc.h>
+#include <mdp5.h>
 #include <mmc.h>
 #include <partition_parser.h>
 #include <platform.h>
 #include <platform/iomap.h>
+#include <platform/timer.h>
 #include <pm8x41_regulator.h>
 #include <reg.h>
 #include <smd.h>
 #include <smem.h>
+#include <stdlib.h>
 #include <target.h>
 #include "fastboot.h"
+
+static bool parse_write_args(const char *arg, uint32_t *addr, uint32_t *value)
+{
+	char *saveptr;
+	char *args = strdup(arg);
+	char *addr_str = strtok_r(args, " ", &saveptr);
+	char *value_str = strtok_r(NULL, " ", &saveptr);
+
+	if (!addr_str || !value_str) {
+		free(args);
+		return false;
+	}
+
+	*addr = atoi(addr_str);
+	*value = atoi(value_str);
+	free(args);
+	return true;
+}
+
+static void cmd_oem_readl(const char *arg, void *data, unsigned sz)
+{
+	char response[MAX_RSP_SIZE];
+	uint32_t addr = 0;
+
+	addr = atoi(arg);
+	snprintf(response, sizeof(response), "0x%08x\n", readl(addr));
+	fastboot_info(response);
+
+	fastboot_okay("");
+}
+
+static void cmd_oem_writel(const char *arg, void *data, unsigned sz)
+{
+	char response[MAX_RSP_SIZE];
+	uint32_t addr = 0, value = 0;
+
+	if (!parse_write_args(arg, &addr, &value)) {
+		fastboot_fail("");
+		return;
+	}
+
+	writel(value, addr);
+
+	fastboot_okay("");
+}
+
+static void cmd_oem_readb(const char *arg, void *data, unsigned sz)
+{
+	char response[MAX_RSP_SIZE];
+	uint32_t addr = 0;
+
+	addr = atoi(arg);
+	snprintf(response, sizeof(response), "0x%02x\n", readb(addr));
+	fastboot_info(response);
+
+	fastboot_okay("");
+}
+
+static void cmd_oem_writeb(const char *arg, void *data, unsigned sz)
+{
+	char response[MAX_RSP_SIZE];
+	uint32_t addr = 0, value = 0;
+
+	if (!parse_write_args(arg, &addr, &value) || value > 0xff) {
+		fastboot_fail("");
+		return;
+	}
+
+	writeb(value, addr);
+
+	fastboot_okay("");
+}
 
 static void cmd_oem_dump_partition(const char *arg, void *data, unsigned sz)
 {
@@ -77,6 +152,48 @@ static void cmd_oem_screenshot(const char *arg, void *data, unsigned sz)
 	fastboot_stage(data, hdr + sz*3);
 }
 
+#define MDP_PP_SYNC_CONFIG_VSYNC	0x004
+#define MDP_PP_AUTOREFRESH_CONFIG	0x030
+
+static void mdp5_enable_auto_refresh(struct fbcon_config *fb)
+{
+	uint32_t vsync_count = 19200000 / (fb->height * 60); /* 60 fps */
+	uint32_t mdss_mdp_rev = readl(MDP_HW_REV);
+	uint32_t pp0_base;
+
+	if (mdss_mdp_rev >= MDSS_MDP_HW_REV_105)
+		pp0_base = REG_MDP(0x71000);
+	else if (mdss_mdp_rev >= MDSS_MDP_HW_REV_102)
+		pp0_base = REG_MDP(0x12D00);
+	else
+		pp0_base = REG_MDP(0x21B00);
+
+	fb->update_start = NULL;
+	thread_sleep(42);
+
+	writel(vsync_count | BIT(19), pp0_base + MDP_PP_SYNC_CONFIG_VSYNC);
+	writel(BIT(31) | 1, pp0_base + MDP_PP_AUTOREFRESH_CONFIG);
+	writel(1, MDP_CTL_0_BASE + CTL_START);
+}
+
+static void cmd_oem_display_auto_refresh(const char *arg, void *data, unsigned sz)
+{
+	struct fbcon_config *fb = fbcon_display();
+
+	if (!fb) {
+		fastboot_fail("display not initialized");
+		return;
+	}
+
+	if (!fb->update_start) {
+		fastboot_fail("display auto-refresh seems already enabled?");
+		return;
+	}
+
+	mdp5_enable_auto_refresh(fb);
+	fastboot_okay("");
+}
+
 static void cmd_oem_reboot_edl(const char *arg, void *data, unsigned sz)
 {
 	if (set_download_mode(EMERGENCY_DLOAD)) {
@@ -86,6 +203,47 @@ static void cmd_oem_reboot_edl(const char *arg, void *data, unsigned sz)
 
 	fastboot_okay("");
 	reboot_device(DLOAD);
+}
+
+/* Taken from Linux kernel: arch/arm/include/asm/cputype.h */
+#define read_cpuid_ext(ext_reg)						\
+	({								\
+		unsigned int __val;					\
+		__asm__("mrc	p15, 0, %0, c0, " ext_reg		\
+		    : "=r" (__val));					\
+		__val;							\
+	})
+
+#define fastboot_info_cpuid_ext(name, ext_reg)				\
+	{								\
+		char response[MAX_RSP_SIZE];				\
+		snprintf(response, sizeof(response), #name " = %#x",	\
+			 read_cpuid_ext(ext_reg));			\
+		fastboot_info(response);				\
+	}
+
+static void cmd_oem_dump_cpuid(const char *arg, void *data, unsigned sz)
+{
+	fastboot_info_cpuid_ext(ID_PFR0, "c1, 0");
+	fastboot_info_cpuid_ext(ID_PFR1, "c1, 1");
+	fastboot_info_cpuid_ext(ID_PFR2, "c3, 4");
+	fastboot_info_cpuid_ext(ID_DFR0, "c1, 2");
+	fastboot_info_cpuid_ext(ID_DFR1, "c3, 5");
+	fastboot_info_cpuid_ext(ID_AFR0, "c1, 3");
+	fastboot_info_cpuid_ext(ID_MMFR0, "c1, 4");
+	fastboot_info_cpuid_ext(ID_MMFR1, "c1, 5");
+	fastboot_info_cpuid_ext(ID_MMFR2, "c1, 6");
+	fastboot_info_cpuid_ext(ID_MMFR3, "c1, 7");
+	fastboot_info_cpuid_ext(ID_MMFR4, "c2, 6");
+	fastboot_info_cpuid_ext(ID_MMFR5, "c3, 6");
+	fastboot_info_cpuid_ext(ID_ISAR0, "c2, 0");
+	fastboot_info_cpuid_ext(ID_ISAR1, "c2, 1");
+	fastboot_info_cpuid_ext(ID_ISAR2, "c2, 2");
+	fastboot_info_cpuid_ext(ID_ISAR3, "c2, 3");
+	fastboot_info_cpuid_ext(ID_ISAR4, "c2, 4");
+	fastboot_info_cpuid_ext(ID_ISAR5, "c2, 5");
+	fastboot_info_cpuid_ext(ID_ISAR6, "c2, 7");
+	fastboot_okay("");
 }
 
 static void cmd_oem_dump_regulators(const char *arg, void *data, unsigned sz)
@@ -274,6 +432,11 @@ static void cmd_oem_dump_rpm_data_ram(const char *arg, void *data, unsigned sz)
 #endif
 
 void fastboot_extra_register_commands(void) {
+	fastboot_register("oem readl", cmd_oem_readl);
+	fastboot_register("oem writel", cmd_oem_writel);
+	fastboot_register("oem readb", cmd_oem_readb);
+	fastboot_register("oem writeb", cmd_oem_writeb);
+
 	fastboot_register("oem dump", cmd_oem_dump_partition);
 
 #if WITH_DEBUG_LOG_BUF
@@ -281,9 +444,11 @@ void fastboot_extra_register_commands(void) {
 #endif
 #if DISPLAY_SPLASH_SCREEN
 	fastboot_register("oem screenshot", cmd_oem_screenshot);
+	fastboot_register("oem display-auto-refresh", cmd_oem_display_auto_refresh);
 #endif
 
 	fastboot_register("oem reboot-edl", cmd_oem_reboot_edl);
+	fastboot_register("oem dump-cpuid", cmd_oem_dump_cpuid);
 	fastboot_register("oem dump-regulators", cmd_oem_dump_regulators);
 	fastboot_register("oem dump-smd-rpm", cmd_oem_dump_smd_rpm);
 

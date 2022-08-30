@@ -61,16 +61,18 @@ extern int msm_display_off();
 
 static uint32_t panel_backlight_ctrl(uint8_t enable)
 {
-	return target_backlight_ctrl(panelstruct.backlightinfo, enable);
+	uint32_t ret = NO_ERROR;
+	if (panelstruct.backlightinfo)
+		ret = target_backlight_ctrl(panelstruct.backlightinfo, enable);
+	return ret;
 }
 
 static uint32_t mdss_dsi_panel_reset(uint8_t enable)
 {
 	uint32_t ret = NO_ERROR;
-
-	ret = target_panel_reset(enable, panelstruct.panelresetseq,
-						&panel.panel_info);
-
+	if (panelstruct.panelresetseq)
+		ret = target_panel_reset(enable, panelstruct.panelresetseq,
+							&panel.panel_info);
 	return ret;
 }
 
@@ -367,6 +369,11 @@ static int mdss_edp_bl_enable(uint8_t enable)
 	return ret;
 }
 
+static int mdss_dsi2HDMI_config (struct msm_panel_info *pinfo)
+{
+	return target_display_dsi2hdmi_config(pinfo);
+}
+
 int gcdb_display_init(const char *panel_name, uint32_t rev, void *base)
 {
 	int ret = NO_ERROR;
@@ -388,6 +395,8 @@ int gcdb_display_init(const char *panel_name, uint32_t rev, void *base)
 		panel.power_func = mdss_dsi_panel_power;
 		panel.pre_init_func = mdss_dsi_panel_pre_init;
 		panel.bl_func = mdss_dsi_bl_enable;
+		panel.dsi2HDMI_config = mdss_dsi2HDMI_config;
+
 		panel.fb.base = base;
 		panel.fb.width =  panel.panel_info.xres;
 		panel.fb.height =  panel.panel_info.yres;

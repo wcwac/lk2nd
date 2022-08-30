@@ -26,6 +26,7 @@ void target_init_keys(void)
 	while (keymap && keymap[i].key) {
 		switch (keymap[i].type) {
 			case KEY_RESIN:
+			case KEY_PWR:
 				break;
 			case KEY_GPIO:
 				gpio_tlmm_config(keymap[i].gpio, 0, GPIO_INPUT, keymap[i].pull, GPIO_2MA, GPIO_ENABLE);
@@ -53,6 +54,9 @@ int target_key_pressed(int key)
 			switch (keymap[i].type) {
 				case KEY_RESIN:
 					st = pm8x41_resin_status();
+					break;
+				case KEY_PWR:
+					st = pm8x41_get_pwrkey_is_pressed();
 					break;
 				case KEY_GPIO:
 					st = (gpio_status(keymap[i].gpio) == keymap[i].active);
@@ -90,7 +94,7 @@ int target_volume_down() {
 	return target_key_pressed(KEY_VOLUMEDOWN);
 }
 
-void target_keystatus()
+void lk2nd_target_keystatus()
 {
 	keys_init();
 	target_init_keys();
@@ -104,5 +108,3 @@ void target_keystatus()
 	if (target_key_pressed(KEY_HOME))
 		keys_post_event(KEY_HOME, 1);
 }
-
-

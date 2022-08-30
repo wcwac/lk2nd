@@ -164,6 +164,7 @@ int partition_publish(const char *device, off_t offset)
 
 		if(!gpt_partitions_exist) break;
 		dprintf(INFO, "found GPT\n");
+		dev->is_gpt = true;
 
 		err = bio_read(dev, buf, offset + dev->block_size, dev->block_size);
 		if (err < 0)
@@ -250,7 +251,11 @@ int partition_publish(const char *device, off_t offset)
 
 				/* Some linux distros make use of subpartitions.
 				 * Scan some devices recursively to publish them. */
-				if (strcmp(name, "system") == 0 || strcmp(name, "userdata") == 0)
+				if (strcmp(name, "system") == 0
+				    || strcmp(name, "userdata") == 0
+				    || strcmp(name, "rootfs") == 0
+				    || strcmp(name, "MainOS") == 0
+				    || strcmp(name, "Data") == 0)
 					partition_publish(subdevice, 0);
 
 				count++;

@@ -21,6 +21,17 @@
 		};
 	};
 
+	j5xnltezt {
+		model = "Samsung Galaxy J5 2016 (SM-J510UN)";
+		compatible = "samsung,j5xnltezt", "qcom,msm8916", "lk2nd,device";
+		lk2nd,match-bootloader = "J510UN*";
+
+		samsung,muic-reset {
+			i2c-gpio-pins = <105 106>;
+			i2c-address = <0x25>;
+		};
+	};
+
 	gt58lte-aus {
 		model = "Samsung Galaxy Tab A 8.0 2015 (SM-T355Y)";
 		compatible = "samsung,gt58lte-aus", "qcom,msm8916", "lk2nd,device";
@@ -52,6 +63,28 @@
 		samsung,muic-reset {
 			i2c-gpio-pins = <105 106>;
 			i2c-address = <0x25>;
+		};
+	};
+
+	rossaltedv {
+		model = "Samsung Galaxy Core Prime LTE (SM-G360G)";
+		compatible = "samsung,rossaltexsa", "qcom,msm8916", "lk2nd,device";
+		lk2nd,match-bootloader = "G360GD*";
+
+		qcom,msm-id = <206 0>;
+		qcom,board-id = <0xCE08FF01 1>;
+
+		#include "msm8916-samsung-cprime.dtsi"
+	};
+
+	grandmaxlteub {
+		model = "Samsung Galaxy Grand Max (SM-G720AX)";
+		compatible = "samsung,grandmaxlteub", "qcom,msm8916", "lk2nd,device";
+		lk2nd,match-bootloader = "G720AX*";
+
+		samsung,muic-reset {
+			i2c-gpio-pins = <105 106>;
+			i2c-address = <0x14>;
 		};
 	};
 };

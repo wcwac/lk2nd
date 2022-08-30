@@ -3,6 +3,7 @@
 /dts-v1/;
 
 #include <skeleton.dtsi>
+#include <lk2nd.h>
 
 / {
 	// This is used by the bootloader to find the correct DTB
@@ -41,6 +42,15 @@
 		};
 	};
 
+	gprimeltexx {
+		model = "Samsung Galaxy Grand Prime (SM-G530FZ)";
+		compatible = "samsung,gprimeltexx", "qcom,msm8916", "lk2nd,device";
+		lk2nd,match-bootloader = "G530FZ*";
+		qcom,msm-id = <206 0>;
+		qcom,board-id = <0xCE08FF01 2>;
+		#include "msm8916-samsung-gprime.dtsi"
+	};
+
 	j5xlte-chn {
 		model = "Samsung Galaxy J5 2016 (SM-J5108)";
 		compatible = "samsung,j5xlte-chn", "qcom,msm8916", "lk2nd,device";
@@ -60,5 +70,17 @@
 			i2c-gpio-pins = <105 106>;
 			i2c-address = <0x25>;
 		};
+	};
+
+	/*
+	 * Before building for rossaltezt, please comment out all dtbs except
+	 * "$(LOCAL_DIR)/msm8916-samsung-r03.dtb" at './rules.mk'.
+	 * rossaltezt doesn't work with multi-dtbs; only goes into "Download mode".
+	 */
+	rossaltezt {
+		model = "Samsung Galaxy Core Prime LTE (SM-G360G)";
+		compatible = "samsung,rossaltexsa", "qcom,msm8916", "lk2nd,device";
+		lk2nd,match-bootloader = "G360GZT*";
+		#include "msm8916-samsung-cprime.dtsi"
 	};
 };

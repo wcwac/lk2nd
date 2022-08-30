@@ -567,6 +567,29 @@ static struct vote_clk gcc_ce1_axi_clk = {
 	},
 };
 
+static struct rcg_clk gcc_blsp1_qup1_i2c_apps_clk_src =
+{
+	.cmd_reg      = (uint32_t *) GCC_BLSP1_QUP1_CMD_RCGR,
+	.cfg_reg      = (uint32_t *) GCC_BLSP1_QUP1_CFG_RCGR,
+	.set_rate     = clock_lib2_rcg_set_rate_hid,
+	.freq_tbl     = ftbl_gcc_blsp1_qup2_i2c_apps_clk_src,
+	.current_freq = &rcg_dummy_freq,
+
+	.c = {
+		.dbg_name = "gcc_blsp1_qup1_i2c_apps_clk_src",
+		.ops      = &clk_ops_rcg,
+	},
+};
+
+static struct branch_clk gcc_blsp1_qup1_i2c_apps_clk = {
+	.cbcr_reg = (uint32_t *) GCC_BLSP1_QUP1_APPS_CBCR,
+	.parent   = &gcc_blsp1_qup1_i2c_apps_clk_src.c,
+
+	.c = {
+		.dbg_name = "gcc_blsp1_qup1_i2c_apps_clk",
+		.ops      = &clk_ops_branch,
+	},
+};
 
 static struct rcg_clk gcc_blsp1_qup2_i2c_apps_clk_src =
 {
@@ -591,6 +614,103 @@ static struct branch_clk gcc_blsp1_qup2_i2c_apps_clk = {
 		.ops      = &clk_ops_branch,
 	},
 };
+
+static struct rcg_clk gcc_blsp1_qup3_i2c_apps_clk_src =
+{
+	.cmd_reg      = (uint32_t *) GCC_BLSP1_QUP3_CMD_RCGR,
+	.cfg_reg      = (uint32_t *) GCC_BLSP1_QUP3_CFG_RCGR,
+	.set_rate     = clock_lib2_rcg_set_rate_hid,
+	.freq_tbl     = ftbl_gcc_blsp1_qup2_i2c_apps_clk_src,
+	.current_freq = &rcg_dummy_freq,
+
+	.c = {
+		.dbg_name = "gcc_blsp1_qup3_i2c_apps_clk_src",
+		.ops      = &clk_ops_rcg,
+	},
+};
+
+static struct branch_clk gcc_blsp1_qup3_i2c_apps_clk = {
+	.cbcr_reg = (uint32_t *) GCC_BLSP1_QUP3_APPS_CBCR,
+	.parent   = &gcc_blsp1_qup3_i2c_apps_clk_src.c,
+
+	.c = {
+		.dbg_name = "gcc_blsp1_qup3_i2c_apps_clk",
+		.ops      = &clk_ops_branch,
+	},
+};
+
+static struct rcg_clk gcc_blsp1_qup4_i2c_apps_clk_src =
+{
+	.cmd_reg      = (uint32_t *) GCC_BLSP1_QUP4_CMD_RCGR,
+	.cfg_reg      = (uint32_t *) GCC_BLSP1_QUP4_CFG_RCGR,
+	.set_rate     = clock_lib2_rcg_set_rate_hid,
+	.freq_tbl     = ftbl_gcc_blsp1_qup2_i2c_apps_clk_src,
+	.current_freq = &rcg_dummy_freq,
+
+	.c = {
+		.dbg_name = "gcc_blsp1_qup4_i2c_apps_clk_src",
+		.ops      = &clk_ops_rcg,
+	},
+};
+
+static struct branch_clk gcc_blsp1_qup4_i2c_apps_clk = {
+	.cbcr_reg = (uint32_t *) GCC_BLSP1_QUP4_APPS_CBCR,
+	.parent   = &gcc_blsp1_qup4_i2c_apps_clk_src.c,
+
+	.c = {
+		.dbg_name = "gcc_blsp1_qup4_i2c_apps_clk",
+		.ops      = &clk_ops_branch,
+	},
+};
+
+static struct rcg_clk gcc_blsp1_qup5_i2c_apps_clk_src =
+{
+	.cmd_reg      = (uint32_t *) GCC_BLSP1_QUP5_CMD_RCGR,
+	.cfg_reg      = (uint32_t *) GCC_BLSP1_QUP5_CFG_RCGR,
+	.set_rate     = clock_lib2_rcg_set_rate_hid,
+	.freq_tbl     = ftbl_gcc_blsp1_qup2_i2c_apps_clk_src,
+	.current_freq = &rcg_dummy_freq,
+
+	.c = {
+		.dbg_name = "gcc_blsp1_qup5_i2c_apps_clk_src",
+		.ops      = &clk_ops_rcg,
+	},
+};
+
+static struct branch_clk gcc_blsp1_qup5_i2c_apps_clk = {
+	.cbcr_reg = (uint32_t *) GCC_BLSP1_QUP5_APPS_CBCR,
+	.parent   = &gcc_blsp1_qup5_i2c_apps_clk_src.c,
+
+	.c = {
+		.dbg_name = "gcc_blsp1_qup5_i2c_apps_clk",
+		.ops      = &clk_ops_branch,
+	},
+};
+
+static struct rcg_clk gcc_blsp1_qup6_i2c_apps_clk_src =
+{
+	.cmd_reg      = (uint32_t *) GCC_BLSP1_QUP6_CMD_RCGR,
+	.cfg_reg      = (uint32_t *) GCC_BLSP1_QUP6_CFG_RCGR,
+	.set_rate     = clock_lib2_rcg_set_rate_hid,
+	.freq_tbl     = ftbl_gcc_blsp1_qup2_i2c_apps_clk_src,
+	.current_freq = &rcg_dummy_freq,
+
+	.c = {
+		.dbg_name = "gcc_blsp1_qup6_i2c_apps_clk_src",
+		.ops      = &clk_ops_rcg,
+	},
+};
+
+static struct branch_clk gcc_blsp1_qup6_i2c_apps_clk = {
+	.cbcr_reg = (uint32_t *) GCC_BLSP1_QUP6_APPS_CBCR,
+	.parent   = &gcc_blsp1_qup6_i2c_apps_clk_src.c,
+
+	.c = {
+		.dbg_name = "gcc_blsp1_qup6_i2c_apps_clk",
+		.ops      = &clk_ops_branch,
+	},
+};
+
 /* Clock lookup table */
 static struct clk_lookup msm_clocks_8916[] =
 {
@@ -622,10 +742,65 @@ static struct clk_lookup msm_clocks_8916[] =
 	CLK_LOOKUP("ce1_core_clk", gcc_ce1_clk.c),
 	CLK_LOOKUP("ce1_src_clk",  ce1_clk_src.c),
 
+	CLK_LOOKUP("blsp1_qup1_ahb_iface_clk", gcc_blsp1_ahb_clk.c),
+	CLK_LOOKUP("gcc_blsp1_qup1_i2c_apps_clk_src", gcc_blsp1_qup1_i2c_apps_clk_src.c),
+	CLK_LOOKUP("gcc_blsp1_qup1_i2c_apps_clk", gcc_blsp1_qup1_i2c_apps_clk.c),
+
 	CLK_LOOKUP("blsp1_qup2_ahb_iface_clk", gcc_blsp1_ahb_clk.c),
 	CLK_LOOKUP("gcc_blsp1_qup2_i2c_apps_clk_src", gcc_blsp1_qup2_i2c_apps_clk_src.c),
 	CLK_LOOKUP("gcc_blsp1_qup2_i2c_apps_clk", gcc_blsp1_qup2_i2c_apps_clk.c),
+
+	CLK_LOOKUP("blsp1_qup3_ahb_iface_clk", gcc_blsp1_ahb_clk.c),
+	CLK_LOOKUP("gcc_blsp1_qup3_i2c_apps_clk_src", gcc_blsp1_qup3_i2c_apps_clk_src.c),
+	CLK_LOOKUP("gcc_blsp1_qup3_i2c_apps_clk", gcc_blsp1_qup3_i2c_apps_clk.c),
+
+	CLK_LOOKUP("blsp1_qup4_ahb_iface_clk", gcc_blsp1_ahb_clk.c),
+	CLK_LOOKUP("gcc_blsp1_qup4_i2c_apps_clk_src", gcc_blsp1_qup4_i2c_apps_clk_src.c),
+	CLK_LOOKUP("gcc_blsp1_qup4_i2c_apps_clk", gcc_blsp1_qup4_i2c_apps_clk.c),
+
+	CLK_LOOKUP("blsp1_qup5_ahb_iface_clk", gcc_blsp1_ahb_clk.c),
+	CLK_LOOKUP("gcc_blsp1_qup5_i2c_apps_clk_src", gcc_blsp1_qup5_i2c_apps_clk_src.c),
+	CLK_LOOKUP("gcc_blsp1_qup5_i2c_apps_clk", gcc_blsp1_qup5_i2c_apps_clk.c),
+
+	CLK_LOOKUP("blsp1_qup6_ahb_iface_clk", gcc_blsp1_ahb_clk.c),
+	CLK_LOOKUP("gcc_blsp1_qup6_i2c_apps_clk_src", gcc_blsp1_qup6_i2c_apps_clk_src.c),
+	CLK_LOOKUP("gcc_blsp1_qup6_i2c_apps_clk", gcc_blsp1_qup6_i2c_apps_clk.c),
 };
+
+#define APCS_ALIAS0_CMD_RCGR_BASE		0xb111050
+#define APCS_ALIAS0_CMD_RCGR_REG		0x0
+#define APCS_ALIAS0_CMD_RCGR_UPDATE		BIT(0)
+#define APCS_ALIAS0_CFG_REG			0x4
+#define APCS_ALIAS0_CFG_RCGR_SRC_SEL_CLK3	BIT(10)
+#define APCS_ALIAS0_CFG_RCGR_SRC_DIV_2		(BIT(1) | BIT(0))
+
+static void msm8939_clock_c0_init(void)
+{
+	uint32_t base;
+	int regval;
+	int count;
+
+	base = APCS_ALIAS0_CMD_RCGR_BASE;
+
+	/* Source GPLL0 and 1/2 the rate of GPLL0 0x0403 */
+	regval = APCS_ALIAS0_CFG_RCGR_SRC_SEL_CLK3 |
+		 APCS_ALIAS0_CFG_RCGR_SRC_DIV_2;
+	writel(regval, base + APCS_ALIAS0_CFG_REG);
+	regval = readl(base + APCS_ALIAS0_CFG_REG);
+
+	/* update bit */
+	regval = readl(base + APCS_ALIAS0_CMD_RCGR_REG);
+	regval |= APCS_ALIAS0_CMD_RCGR_UPDATE;
+	writel(regval, base + APCS_ALIAS0_CMD_RCGR_REG);
+
+	/* Wait for update to take effect */
+	for (count = 500; count > 0; count--) {
+		regval = readl(base + APCS_ALIAS0_CMD_RCGR_REG);
+		if (!regval & APCS_ALIAS0_CMD_RCGR_UPDATE)
+			break;
+		udelay(1);
+	}
+}
 
 void msm8939_clock_override()
 {
@@ -634,7 +809,9 @@ void msm8939_clock_override()
 
 void platform_clock_init(void)
 {
-	if (platform_is_msm8939() || platform_is_msm8929())
+	if (platform_is_msm8939() || platform_is_msm8929()) {
 		msm8939_clock_override();
+		msm8939_clock_c0_init();
+	}
 	clk_init(msm_clocks_8916, ARRAY_SIZE(msm_clocks_8916));
 }

@@ -42,6 +42,7 @@
 #include <target/display.h>
 #include <i2c_qup.h>
 #include <blsp_qup.h>
+#include <mipi_dsi_i2c.h>
 
 #include "include/panel.h"
 #include "include/display_resource.h"
@@ -297,6 +298,67 @@ static int qrd_lcd_i2c_write(uint8_t addr, uint8_t val)
 	return 0;
 }
 
+static int dsi2HDMI_i2c_write_regs(struct mipi_dsi_i2c_cmd *cfg, int size)
+{
+	int ret = NO_ERROR;
+	int i;
+
+	if (!cfg)
+		return ERR_INVALID_ARGS;
+
+	for (i = 0; i < size; i++) {
+		ret = mipi_dsi_i2c_write_byte(cfg[i].i2c_addr, cfg[i].reg,
+			cfg[i].val);
+		if (ret) {
+			dprintf(CRITICAL, "mipi_dsi reg writes failed\n");
+			goto w_regs_fail;
+		}
+		if (cfg[i].sleep_in_ms) {
+			udelay(cfg[i].sleep_in_ms*1000);
+		}
+	}
+w_regs_fail:
+	return ret;
+}
+
+int target_display_dsi2hdmi_config(struct msm_panel_info *pinfo)
+{
+	int ret = NO_ERROR;
+
+	if (!pinfo)
+		return ERR_INVALID_ARGS;
+
+	if (pinfo->adv7533.dsi_setup_cfg_i2c_cmd || pinfo->adv7533.dsi_tg_i2c_cmd) {
+		uint8_t rev = 0;
+
+		/* Set Switch GPIO to DSI2HDMI mode */
+		target_set_switch_gpio(1);
+		/* ADV7533 DSI to HDMI Bridge Chip Connected */
+		mipi_dsi_i2c_device_init();
+		/* Read ADV Chip ID */
+		if (!mipi_dsi_i2c_read_byte(ADV7533_MAIN, 0x00, &rev)) {
+			dprintf(INFO, "ADV7533 Rev ID: 0x%x\n",rev);
+		} else {
+			dprintf(CRITICAL, "error reading Rev ID from bridge chip\n");
+			return ERR_IO;
+		}
+	}
+
+	/*
+	 * If dsi to HDMI bridge chip connected then
+	 * send I2c commands to the chip
+	 */
+	if (pinfo->adv7533.dsi_setup_cfg_i2c_cmd)
+		ret = dsi2HDMI_i2c_write_regs(pinfo->adv7533.dsi_setup_cfg_i2c_cmd,
+					pinfo->adv7533.num_of_cfg_i2c_cmds);
+
+	if (pinfo->adv7533.dsi_tg_i2c_cmd)
+		ret = dsi2HDMI_i2c_write_regs(pinfo->adv7533.dsi_tg_i2c_cmd,
+					pinfo->adv7533.num_of_tg_i2c_cmds);
+
+	return ret;
+}
+
 static int target_panel_reset_skuh(uint8_t enable)
 {
 	int ret = NO_ERROR;
@@ -435,6 +497,7 @@ int target_panel_reset(uint8_t enable, struct panel_reset_sequence *resetseq,
 			gpio_set_dir(enable_gpio.pin_id, 2);
 		}
 
+#ifndef WITH_LK2ND_PANEL
 		if (platform_is_msm8939() || platform_is_msm8929()) {
 			if ((hw_id == HW_PLATFORM_QRD) &&
 				 (hw_subtype == HW_PLATFORM_SUBTYPE_SKUK))
@@ -460,6 +523,7 @@ int target_panel_reset(uint8_t enable, struct panel_reset_sequence *resetseq,
 				bkl_gpio.pin_strength, bkl_gpio.pin_state);
 			gpio_set_dir(bkl_gpio.pin_id, 2);
 		}
+#endif
 
 		gpio_tlmm_config(reset_gpio.pin_id, 0,
 				reset_gpio.pin_direction, reset_gpio.pin_pull,
@@ -480,6 +544,7 @@ int target_panel_reset(uint8_t enable, struct panel_reset_sequence *resetseq,
 		if (pinfo->mipi.use_enable_gpio)
 			gpio_set_dir(enable_gpio.pin_id, 0);
 
+#ifndef WITH_LK2ND_PANEL
 		if (platform_is_msm8939() || platform_is_msm8929()) {
 			if ((hw_id == HW_PLATFORM_QRD) &&
 				 (hw_subtype == HW_PLATFORM_SUBTYPE_SKUK))
@@ -489,11 +554,13 @@ int target_panel_reset(uint8_t enable, struct panel_reset_sequence *resetseq,
 				 (hw_subtype == HW_PLATFORM_SUBTYPE_SKUH))
 				target_panel_reset_skuh(enable);
 		}
+#endif
 	}
 
 	return ret;
 }
 
+#ifndef WITH_LK2ND_PANEL
 int target_ldo_ctrl(uint8_t enable, struct msm_panel_info *pinfo)
 {
 	/*
@@ -502,6 +569,7 @@ int target_ldo_ctrl(uint8_t enable, struct msm_panel_info *pinfo)
 	 */
 	return NO_ERROR;
 }
+#endif
 
 bool target_display_panel_node(char *panel_name, char *pbuf, uint16_t buf_size)
 {
@@ -538,6 +606,20 @@ bool target_display_panel_node(char *panel_name, char *pbuf, uint16_t buf_size)
 	}
 
 	return true;
+}
+
+void target_set_switch_gpio(int enable_dsi2HdmiBridge)
+{
+	gpio_tlmm_config(dsi2HDMI_switch_gpio.pin_id, 0,
+				dsi2HDMI_switch_gpio.pin_direction,
+				dsi2HDMI_switch_gpio.pin_pull,
+				dsi2HDMI_switch_gpio.pin_strength,
+				dsi2HDMI_switch_gpio.pin_state);
+	gpio_set_dir(enable_gpio.pin_id, 2);
+	if (enable_dsi2HdmiBridge)
+		gpio_set_dir(enable_gpio.pin_id, 0); /* DSI2HDMI Bridge */
+	else
+		gpio_set_dir(enable_gpio.pin_id, 2); /* Normal DSI operation */
 }
 
 void target_display_init(const char *panel_name)
